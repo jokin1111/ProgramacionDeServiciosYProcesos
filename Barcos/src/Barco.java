@@ -52,7 +52,6 @@ public class Barco extends JFrame implements Runnable{
              botones2[i] = new JButton(String.valueOf(i));
              panel2.add(botones2[i]);
         }
-        //AAAAAAAAAAAAAA
     }
     
     public void initBarcos(){
