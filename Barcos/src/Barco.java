@@ -1,34 +1,30 @@
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 
 public class Barco extends JFrame implements Runnable{
     JPanel panel1, panel2;
     JButton botones[] = new JButton[100];
     JButton botones2[] = new JButton[100];
-    Semaphore s1 = new Semaphore(1);
-    int i;
-    int z;
-    String s;
     int v1;
     int v2[],v3[],v4[];
     JRadioButton [] radios = new JRadioButton[4];
     JRadioButton [] radios1 = new JRadioButton[2];
     ButtonGroup grupo;
     ButtonGroup grupo1;
-    boolean b1,b2,b3,b4, xd;
+    boolean b1,b2,b3,b4, xd, empieza;
     int contador = 0;
     int puertoRecibe, puertoEnvia;
-    JButton start;
-    public Barco(int puertoRecibe, int puertoEnvia, String jugador){
+    JButton start, ultimoBoton;
+    Semaphore s1;
+    int barcos = 10;
+    public Barco(int puertoRecibe, int puertoEnvia, String jugador, Boolean empieza){
         this.puertoRecibe = puertoRecibe;
         this.puertoEnvia = puertoEnvia;
+        this.empieza = empieza;
+        s1 =  new Semaphore(empieza ? 1 : 0);
         new Thread(this).start();
         initVs();
         initRadios();
@@ -64,27 +60,6 @@ public class Barco extends JFrame implements Runnable{
         panel2.setLayout(new GridLayout(10, 10));
         panel2.setVisible(false);
         add(panel2);
-    }
-    private boolean comprobarArr(int i) {
-        if (v1 == i){
-            return true;
-        }
-        for (int j = 0; j < v2.length; j++) {
-            if (v2[j] == i){
-                return true;
-            }
-        }
-        for (int j = 0; j < v3.length; j++) {
-            if (v3[j] == i) {
-                return true;
-            }
-        }
-        for (int j = 0; j < v4.length; j++) {
-            if (v4[j] == i) {
-                return true;
-            }
-        }
-        return false;
     }
     public void initBotones(){
         for (int i = 0; i < botones.length; i++) {
@@ -169,8 +144,11 @@ public class Barco extends JFrame implements Runnable{
             botones2[i].addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    EnviaObjetos.Envia(finalI, "localhost", puertoEnvia);
-                    z = finalI;
+                    if (s1.tryAcquire()){
+                        ultimoBoton = ((JButton)e.getSource());
+                        EnviaObjetos.Envia(finalI, "localhost", puertoEnvia);
+                        ((JButton)e.getSource()).setEnabled(false);
+                    }
                 }
             });
             panel2.add(botones2[i]);
@@ -234,63 +212,45 @@ public class Barco extends JFrame implements Runnable{
        add(p2);
    }
     public static void main(String[] args){
-        new Barco(5000, 6500, "jugador 2");
-        new Barco(6500, 5000, "jugador 1");
+        new Barco(5000, 6500, "jugador 2",true);
+        new Barco(6500, 5000, "jugador 1",false);
     }
     @Override
     public void run() {
-        while (true){
+        while (barcos > 0){
             Object ob = RecibeObjetos.recibe(puertoRecibe);
             if (ob instanceof Integer){
-                i = (int)ob;
-            } else if (ob instanceof String) {
-                s = (String)ob;
-            }
-            if (v1 == i){
-                botones[i].setBackground(Color.RED);
-                botones2[i].setEnabled(false);
-            }
-            for (int j = 0; j < v2.length; j++) {
-                if(v2[j] == i){
-                    botones2[i].setEnabled(false);
-                    botones[i].setBackground(Color.RED);
+                s1.release();
+                if (botones[(int)ob].getBackground().equals(Color.GREEN)){
+                    EnviaObjetos.Envia("Tocado", "localhost", puertoEnvia);
+                    barcos--;
+                    botones[(int)(ob)].setBackground(Color.RED);
                 }
-            }
-            for (int j = 0; j < v3.length; j++) {
-                if(v3[j] == i){
-                    botones2[i].setEnabled(false);
-                    botones[i].setBackground(Color.RED);
+                else {
+                    EnviaObjetos.Envia("Agua", "localhost", puertoEnvia);
+                    botones[(int)(ob)].setBackground(Color.BLUE);
                 }
-            }
-            for (int j = 0; j < v4.length; j++) {
-                if(v4[j] == i){
-                    botones2[i].setEnabled(false);
-                    botones[i].setBackground(Color.RED);
-                }
-            }
-            if(!comprobarArr(i)){
-                botones[i].setBackground(Color.blue);
-                System.out.println("Agua");
-                EnviaObjetos.Envia("Azul", "localhost", puertoEnvia);
-            }
-            if (comprobarArr(i)) {
-                System.out.println("Tocado");
-                botones2[i].setEnabled(false);
-                contador++;
-                EnviaObjetos.Envia("Rojo", "localhost", puertoEnvia);
-            }
-            System.out.println(contador);
-            s1.release(1);
-            if (s.equals("Azul")){
-                botones2[z].setEnabled(false);
-                botones2[z].setBackground(Color.BLUE);
-            }
-            else if (s.equals("Rojo")){
-                botones2[z].setEnabled(false);
-                botones2[z].setBackground(Color.RED);
-                contador++;
-            }
 
+            } else if (ob instanceof String) {
+                if (ob.equals("Tocado")){
+                    ultimoBoton.setBackground(Color.red);
+                }
+                else if (ob.equals("Agua")){
+                    ultimoBoton.setBackground(Color.blue);
+                } else if (ob.equals("Win")) {
+                    System.out.println("Has ganado");
+                    for (int i = 0; i < botones.length; i++) {
+                        botones[i].setEnabled(false);
+                        botones2[i].setEnabled(false);
+                    }
+                }
+            }
+        }
+        EnviaObjetos.Envia("Win", "localhost", puertoEnvia);
+        System.out.println("Has perdido");
+        for (int i = 0; i < botones.length; i++) {
+            botones[i].setEnabled(false);
+            botones2[i].setEnabled(false);
         }
     }
 }
