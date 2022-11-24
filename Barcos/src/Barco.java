@@ -6,11 +6,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
 
 public class Barco extends JFrame implements Runnable{
     JPanel panel1, panel2;
     JButton botones[] = new JButton[100];
     JButton botones2[] = new JButton[100];
+    Semaphore s1 = new Semaphore(1);
+    int i;
+    int z;
+    String s;
     int v1;
     int v2[],v3[],v4[];
     JRadioButton [] radios = new JRadioButton[4];
@@ -18,6 +23,7 @@ public class Barco extends JFrame implements Runnable{
     ButtonGroup grupo;
     ButtonGroup grupo1;
     boolean b1,b2,b3,b4, xd;
+    int contador = 0;
     int puertoRecibe, puertoEnvia;
     JButton start;
     public Barco(int puertoRecibe, int puertoEnvia, String jugador){
@@ -59,37 +65,58 @@ public class Barco extends JFrame implements Runnable{
         panel2.setVisible(false);
         add(panel2);
     }
+    private boolean comprobarArr(int i) {
+        if (v1 == i){
+            return true;
+        }
+        for (int j = 0; j < v2.length; j++) {
+            if (v2[j] == i){
+                return true;
+            }
+        }
+        for (int j = 0; j < v3.length; j++) {
+            if (v3[j] == i) {
+                return true;
+            }
+        }
+        for (int j = 0; j < v4.length; j++) {
+            if (v4[j] == i) {
+                return true;
+            }
+        }
+        return false;
+    }
     public void initBotones(){
         for (int i = 0; i < botones.length; i++) {
-            botones[i] = new JButton(String.valueOf(i));
+            botones[i] = new JButton();
+            botones[i].setBackground(Color.BLACK);
             panel1.add(botones[i]);
             int finalI = i;
             botones[i].addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     if(radios[0].isSelected()){
-                        botones[finalI].setBackground(Color.RED);
+                        botones[finalI].setBackground(Color.GREEN);
+                        botones[finalI].setEnabled(false);
                         radios[0].setEnabled(false);
                         grupo.clearSelection();
                         grupo1.clearSelection();
                         b1 = true;
                         v1=finalI;
-                        System.out.println(v1);
                     }if(radios[1].isSelected()){
                         for (int j = 0; j < 2; j++) {
                             if(radios1[0].isSelected() & finalI<90){
-                                botones[finalI+(j*10)].setBackground(Color.RED);
+                                botones[finalI+(j*10)].setBackground(Color.GREEN);
+                                botones[finalI+(j*10)].setEnabled(false);
                                 radios[1].setEnabled(false);
                                 v2[j] = finalI+ (j*10);
                             }
                             else if (radios1[1].isSelected()& finalI%10<9) {
-                                botones[finalI+j].setBackground(Color.RED);
+                                botones[finalI+j].setBackground(Color.GREEN);
+                                botones[finalI+j].setEnabled(false);
                                 radios[1].setEnabled(false);
                                 v2[j] = finalI + j;
                             }
-                        }
-                        for (int i = 0; i < 2; i++) {
-                            System.out.print(v2[i] + ",");
                         }
                         grupo.clearSelection();
                         grupo1.clearSelection();
@@ -97,18 +124,17 @@ public class Barco extends JFrame implements Runnable{
                     }if(radios[2].isSelected()){
                         for (int j = 0; j < 3; j++) {
                             if(radios1[0].isSelected() & finalI<80){
-                                botones[finalI+(j*10)].setBackground(Color.RED);
+                                botones[finalI+(j*10)].setBackground(Color.GREEN);
+                                botones[finalI+(j*10)].setEnabled(false);
                                 radios[2].setEnabled(false);
                                 v3[j] = finalI + (j*10);
                             }
                             else if (radios1[1].isSelected()& finalI%10<8) {
-                                botones[finalI+j].setBackground(Color.RED);
+                                botones[finalI+j].setBackground(Color.GREEN);
+                                botones[finalI+j].setEnabled(false);
                                 radios[2].setEnabled(false);
                                 v3[j] = finalI + j;
                             }
-                        }
-                        for (int i = 0; i < 3; i++) {
-                            System.out.print(v3[i] + ",");
                         }
                         grupo.clearSelection();
                         grupo1.clearSelection();
@@ -116,18 +142,17 @@ public class Barco extends JFrame implements Runnable{
                     }if(radios[3].isSelected()){
                         for (int j = 0; j < 4; j++) {
                             if(radios1[0].isSelected() & finalI<70){
-                                botones[finalI+(j*10)].setBackground(Color.RED);
+                                botones[finalI+(j*10)].setBackground(Color.GREEN);
+                                botones[finalI+(j*10)].setEnabled(false);
                                 radios[3].setEnabled(false);
                                 v4[j] = finalI + (j*10);
                             }
                             else if (radios1[1].isSelected()& finalI%10<7) {
-                                botones[finalI+j].setBackground(Color.RED);
+                                botones[finalI+j].setBackground(Color.GREEN);
+                                botones[finalI+j].setEnabled(false);
                                 radios[3].setEnabled(false);
                                 v4[j] = finalI + j;
                             }
-                        }
-                        for (int i = 0; i < 4; i++) {
-                            System.out.print(v4[i] + ",");
                         }
                         grupo.clearSelection();
                         grupo1.clearSelection();
@@ -140,10 +165,12 @@ public class Barco extends JFrame implements Runnable{
                 }
             });
 
-            botones2[i] = new JButton(String.valueOf(i));
+            botones2[i] = new JButton();
             botones2[i].addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
+                    EnviaObjetos.Envia(finalI, "localhost", puertoEnvia);
+                    z = finalI;
                 }
             });
             panel2.add(botones2[i]);
@@ -206,14 +233,6 @@ public class Barco extends JFrame implements Runnable{
            p2.setText("jugador 2");
        add(p2);
    }
-
-   public void initLog(){
-
-   }
-
-   public void HitOrNot(){
-
-   }
     public static void main(String[] args){
         new Barco(5000, 6500, "jugador 2");
         new Barco(6500, 5000, "jugador 1");
@@ -221,9 +240,57 @@ public class Barco extends JFrame implements Runnable{
     @Override
     public void run() {
         while (true){
-            int i = (int) RecibeObjetos.recibe(puertoRecibe);
+            Object ob = RecibeObjetos.recibe(puertoRecibe);
+            if (ob instanceof Integer){
+                i = (int)ob;
+            } else if (ob instanceof String) {
+                s = (String)ob;
+            }
+            if (v1 == i){
+                botones[i].setBackground(Color.RED);
+                botones2[i].setEnabled(false);
+            }
+            for (int j = 0; j < v2.length; j++) {
+                if(v2[j] == i){
+                    botones2[i].setEnabled(false);
+                    botones[i].setBackground(Color.RED);
+                }
+            }
+            for (int j = 0; j < v3.length; j++) {
+                if(v3[j] == i){
+                    botones2[i].setEnabled(false);
+                    botones[i].setBackground(Color.RED);
+                }
+            }
+            for (int j = 0; j < v4.length; j++) {
+                if(v4[j] == i){
+                    botones2[i].setEnabled(false);
+                    botones[i].setBackground(Color.RED);
+                }
+            }
+            if(!comprobarArr(i)){
+                botones[i].setBackground(Color.blue);
+                System.out.println("Agua");
+                EnviaObjetos.Envia("Azul", "localhost", puertoEnvia);
+            }
+            if (comprobarArr(i)) {
+                System.out.println("Tocado");
+                botones2[i].setEnabled(false);
+                contador++;
+                EnviaObjetos.Envia("Rojo", "localhost", puertoEnvia);
+            }
+            System.out.println(contador);
+            s1.release(1);
+            if (s.equals("Azul")){
+                botones2[z].setEnabled(false);
+                botones2[z].setBackground(Color.BLUE);
+            }
+            else if (s.equals("Rojo")){
+                botones2[z].setEnabled(false);
+                botones2[z].setBackground(Color.RED);
+                contador++;
+            }
 
-            EnviaObjetos.Envia(, "localhost", puertoEnvia);
         }
     }
 }
