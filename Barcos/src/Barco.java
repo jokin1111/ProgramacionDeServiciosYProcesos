@@ -4,6 +4,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.concurrent.Semaphore;
 
+import static java.awt.Font.MONOSPACED;
+
 public class Barco extends JFrame implements Runnable{
     JPanel panel1, panel2;
     JButton botones[] = new JButton[100];
@@ -15,11 +17,12 @@ public class Barco extends JFrame implements Runnable{
     ButtonGroup grupo;
     ButtonGroup grupo1;
     boolean b1,b2,b3,b4, xd, empieza;
-    int contador = 0;
     int puertoRecibe, puertoEnvia;
     JButton start, ultimoBoton;
     Semaphore s1;
     int barcos = 10;
+    JLabel Etlog;
+    JTextArea log;
     public Barco(int puertoRecibe, int puertoEnvia, String jugador, Boolean empieza){
         this.puertoRecibe = puertoRecibe;
         this.puertoEnvia = puertoEnvia;
@@ -32,12 +35,14 @@ public class Barco extends JFrame implements Runnable{
         initPanel();
         initBotones();
         initPantalla();
+        initLog();
         initStart();
     }
 
     public void initPantalla(){
         setTitle("Barcos");
         setLayout(null);
+        getContentPane().setBackground(Color.magenta);
         setSize(1100,900);
         setResizable(false);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -52,11 +57,11 @@ public class Barco extends JFrame implements Runnable{
 
     public void initPanel(){
         panel1 = new JPanel();
-        panel1.setBounds(1,60,500,500);
+        panel1.setBounds(1,60,400,400);
         panel1.setLayout(new GridLayout(10, 10));
         add(panel1);
         panel2 = new JPanel();
-        panel2.setBounds(590, 60, 500,500);
+        panel2.setBounds(590, 60, 400,400);
         panel2.setLayout(new GridLayout(10, 10));
         panel2.setVisible(false);
         add(panel2);
@@ -156,7 +161,8 @@ public class Barco extends JFrame implements Runnable{
     }
     public void initStart(){
         start = new JButton("START");
-        start.setBounds(200, 600, 100, 30);
+        start.setBounds(440, 460, 100, 30);
+        start.setForeground(Color.BLUE);
         start.setEnabled(false);
         start.addActionListener(new ActionListener() {
             @Override
@@ -173,6 +179,15 @@ public class Barco extends JFrame implements Runnable{
         });
         add(start);
     }
+    public void initLog(){
+        log = new JTextArea();
+        log.setBounds(50, 540, 900, 300);
+        log.setLineWrap(true);
+        log.setBackground(Color.BLACK);
+        log.setForeground(Color.GREEN);
+        log.setFont(Font.getFont(MONOSPACED));
+        add(log);
+    }
 
     public void initRadios(){
         grupo = new ButtonGroup();
@@ -182,6 +197,7 @@ public class Barco extends JFrame implements Runnable{
         for (int i = 0; i < radios.length; i++) {
             radios[i] = new JRadioButton(nombres[i]);
             radios[i].setBounds(iy, 30, 40, 20);
+            radios[i].setBackground(Color.MAGENTA);
             add(radios[i]);
             grupo.add(radios[i]);
             iy+=50;
@@ -192,6 +208,7 @@ public class Barco extends JFrame implements Runnable{
         for (int i = 0; i < radios1.length; i++) {
             radios1[i] = new JRadioButton(nombres1[i]);
             radios1[i].setBounds(iy1, 30, 100, 20);
+            radios1[i].setBackground(Color.MAGENTA);
             add(radios1[i]);
             grupo1.add(radios1[i]);
             iy1+=95;
@@ -210,6 +227,9 @@ public class Barco extends JFrame implements Runnable{
        else
            p2.setText("jugador 2");
        add(p2);
+       Etlog = new JLabel("Registro de Actividades");
+       Etlog.setBounds(420, 500, 300, 30 );
+       add(Etlog);
    }
     public static void main(String[] args){
         new Barco(5000, 6500, "jugador 2",true);
@@ -217,7 +237,7 @@ public class Barco extends JFrame implements Runnable{
     }
     @Override
     public void run() {
-        while (barcos > 0){
+        while (barcos >0){
             Object ob = RecibeObjetos.recibe(puertoRecibe);
             if (ob instanceof Integer){
                 s1.release();
@@ -234,20 +254,23 @@ public class Barco extends JFrame implements Runnable{
             } else if (ob instanceof String) {
                 if (ob.equals("Tocado")){
                     ultimoBoton.setBackground(Color.red);
+                    log.append("Tocado¡" + "\n");
                 }
                 else if (ob.equals("Agua")){
                     ultimoBoton.setBackground(Color.blue);
-                } else if (ob.equals("Win")) {
-                    System.out.println("Has ganado");
+                    log.append("Agua" + "\n");
+                }
+                else if (ob.equals("Win")) {
                     for (int i = 0; i < botones.length; i++) {
                         botones[i].setEnabled(false);
                         botones2[i].setEnabled(false);
                     }
+                    log.append("has ganado");
                 }
             }
         }
         EnviaObjetos.Envia("Win", "localhost", puertoEnvia);
-        System.out.println("Has perdido");
+        log.append("Has perdido");
         for (int i = 0; i < botones.length; i++) {
             botones[i].setEnabled(false);
             botones2[i].setEnabled(false);
